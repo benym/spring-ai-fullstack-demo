@@ -6,13 +6,16 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermQuery;
 import co.elastic.clients.elasticsearch.core.*;
 import co.elastic.clients.elasticsearch.core.search.Hit;
-import com.demo.spring.ai.fullstack.domain.DocumentDataResponse;
-import com.demo.spring.ai.fullstack.domain.EsDocument;
-import com.demo.spring.ai.fullstack.domain.enums.TransformerTypeEnum;
+import com.demo.spring.ai.fullstack.common.DocumentDataResponse;
+import com.demo.spring.ai.fullstack.common.EsDocument;
+import com.demo.spring.ai.fullstack.common.TransformerTypeEnum;
 import com.demo.spring.ai.fullstack.etl.read.DocumentReaderStrategy;
 import com.demo.spring.ai.fullstack.etl.read.ReaderFactory;
 import com.demo.spring.ai.fullstack.etl.transformer.DocumentTransformerFactory;
 import com.demo.spring.ai.fullstack.etl.transformer.DocumentTransformerStrategy;
+import com.rpamis.common.dto.response.Response;
+import com.rpamis.common.exception.util.Assert;
+import com.rpamis.exception.dto.ExceptionFactory;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.elasticsearch.ElasticsearchVectorStore;
@@ -50,9 +53,9 @@ public class FileController {
     }
 
     @PostMapping("/import/documents")
-    public RemoteResult<String> handleFileUpload(@RequestParam("files") MultipartFile file,
-                                                 @RequestParam("sessionId") @NotBlank(message = "sessionId不能为空") String sessionId,
-                                                 @RequestParam("userId") @NotBlank(message = "用户Id不能为空") String userId) {
+    public Response<String> handleFileUpload(@RequestParam("files") MultipartFile file,
+                                             @RequestParam("sessionId") @NotBlank(message = "sessionId不能为空") String sessionId,
+                                             @RequestParam("userId") @NotBlank(message = "用户Id不能为空") String userId) {
         Assert.isTrue(!file.isEmpty(), "文件为空，请上传有效的文件");
         String originalFilename = file.getOriginalFilename();
         Assert.isTrue(originalFilename.contains("."), "无法识别文件类型，请提供带扩展名的文件");
@@ -71,11 +74,11 @@ public class FileController {
         DocumentTransformerStrategy metaDataTransformer = documentTransformerFactory.getStrategy(TransformerTypeEnum.META_DATA.getCode());
         List<Document> metaDataDocuments = metaDataTransformer.transformWithMeta(transformDocuments, metadataMap);
         elasticsearchVectorStore.add(metaDataDocuments);
-        return RemoteResult.success("上传成功");
+        return Response.success("上传成功");
     }
 
     @GetMapping("/search/document")
-    public RemoteResult<List<DocumentDataResponse>> searchUserDocument(@RequestParam("userId") @NotBlank(message = "用户Id不能为空") String userId) throws IOException {
+    public Response<List<DocumentDataResponse>> searchUserDocument(@RequestParam("userId") @NotBlank(message = "用户Id不能为空") String userId) throws IOException {
         Assert.isTrue(!userId.isBlank(), "用户Id不能为空");
         Optional<ElasticsearchClient> nativeClient = elasticsearchVectorStore.getNativeClient();
         if (nativeClient.isEmpty()) {
@@ -120,11 +123,11 @@ public class FileController {
                 }
             }
         }
-        return RemoteResult.success(new ArrayList<>(uniqueDocs.values()));
+        return Response.success(new ArrayList<>(uniqueDocs.values()));
     }
 
     @PostMapping("/delete/document")
-    public RemoteResult<String> deleteDocument(@RequestParam("docIdList") List<String> docIdList) throws IOException {
+    public Response<String> deleteDocument(@RequestParam("docIdList") List<String> docIdList) throws IOException {
         Assert.isTrue(!CollectionUtils.isEmpty(docIdList), "文档Id不能为空");
         Optional<ElasticsearchClient> nativeClient = elasticsearchVectorStore.getNativeClient();
         if (nativeClient.isEmpty()) {
@@ -146,6 +149,6 @@ public class FileController {
             throw ExceptionFactory.bizNoStackException("文档删除失败");
 
         }
-        return RemoteResult.success("文档删除成功");
+        return Response.success("文档删除成功");
     }
 }

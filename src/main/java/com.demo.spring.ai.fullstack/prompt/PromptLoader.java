@@ -2,6 +2,7 @@ package com.demo.spring.ai.fullstack.prompt;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.demo.spring.ai.fullstack.mcp.ToolRegistryService;
+import com.rpamis.exception.dto.ExceptionFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.core.io.ClassPathResource;

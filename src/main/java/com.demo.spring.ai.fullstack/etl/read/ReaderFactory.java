@@ -1,6 +1,6 @@
 package com.demo.spring.ai.fullstack.etl.read;
 
-import com.demo.spring.ai.fullstack.domain.enums.FileTypeEnum;
+import com.demo.spring.ai.fullstack.common.FileTypeEnum;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;

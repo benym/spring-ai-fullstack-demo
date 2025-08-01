@@ -1,7 +1,8 @@
 package com.demo.spring.ai.fullstack.etl.read.impl;
 
+import com.demo.spring.ai.fullstack.common.FileTypeEnum;
 import com.demo.spring.ai.fullstack.etl.read.DocumentReaderStrategy;
-import com.demo.spring.ai.fullstack.domain.enums.FileTypeEnum;
+import com.rpamis.exception.dto.ExceptionFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.reader.pdf.PagePdfDocumentReader;
 import org.springframework.core.io.ByteArrayResource;

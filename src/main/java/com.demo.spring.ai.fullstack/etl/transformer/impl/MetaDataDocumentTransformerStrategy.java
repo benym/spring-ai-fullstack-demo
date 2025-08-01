@@ -1,6 +1,6 @@
 package com.demo.spring.ai.fullstack.etl.transformer.impl;
 
-import com.demo.spring.ai.fullstack.domain.enums.TransformerTypeEnum;
+import com.demo.spring.ai.fullstack.common.TransformerTypeEnum;
 import com.demo.spring.ai.fullstack.etl.transformer.DocumentTransformerStrategy;
 import org.springframework.ai.document.Document;
 import org.springframework.stereotype.Component;

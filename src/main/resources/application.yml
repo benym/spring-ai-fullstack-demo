@@ -63,3 +63,8 @@ demo:
     # 是否启用mcp tool调用可观测
     observation:
       enabled: true
+rpamis:
+  exception:
+    enabled: true
+    include-exception-class: true
+    rpc-pack: false
