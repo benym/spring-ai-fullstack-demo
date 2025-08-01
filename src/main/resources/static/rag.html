@@ -1,0 +1,1712 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spring AI Chat Demo</title>
+    <!-- 使用国内CDN引入Tailwind CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.2/css/all.min.css">
+    <style>
+        .prompt-btn-group {
+            display: flex;
+            gap: 8px;
+            margin-left: 12px;
+        }
+        /* 在现有CSS中添加以下点状动画样式 */
+        .thinking-dots span {
+            display: inline-block;
+            animation: dotPulse 1.5s infinite;
+            opacity: 0.5;
+        }
+
+        .thinking-dots span:nth-child(1) {
+            animation-delay: 0s;
+        }
+
+        .thinking-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .thinking-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes dotPulse {
+            0%, 100% {
+                transform: translateY(0);
+                opacity: 0.5;
+            }
+            50% {
+                transform: translateY(-4px);
+                opacity: 1;
+            }
+        }
+
+        .thinking-placeholder {
+            background-color: #f8fafc;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-top: 0.5rem;
+        }
+        .message-bubble-content {
+            max-width: 100%;
+            word-wrap: break-word;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            background-color: #f8fafc;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        /* 用户消息气泡背景色 */
+        .user-message .message-bubble-content {
+            background-color: #f1f5f9;
+        }
+
+        /* AI 消息气泡背景色 */
+        .ai-message .message-bubble-content {
+            background-color: #dbeafe;
+        }
+        .thinking-header {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .thinking-content, .answer-content {
+            max-width: 100%;
+            overflow-x: auto;
+        }
+        /* 添加 Markdown 渲染支持 */
+        .answer-content p {
+            margin-bottom: 0.75rem;
+        }
+
+        .answer-content ul, .answer-content ol {
+            margin-left: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .answer-content li {
+            margin-bottom: 0.5rem;
+        }
+
+        .answer-content pre {
+            background-color: #1e293b;
+            color: #f1f5f9;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        .answer-content code {
+            background-color: #f1f5f9;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+        }
+
+        .answer-content blockquote {
+            border-left: 4px solid #3b82f6;
+            padding-left: 1rem;
+            color: #4b5563;
+            margin: 1rem 0;
+        }
+
+        .answer-content strong {
+            font-weight: 600;
+        }
+
+        .answer-content em {
+            font-style: italic;
+        }
+        .collapsible-content {
+            max-height: 1000px;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .collapsible-content.collapsed {
+            max-height: 0;
+        }
+
+        .collapse-icon {
+            transition: transform 0.3s;
+            margin-left: 8px;
+        }
+
+        .collapsed .collapse-icon {
+            transform: rotate(-90deg);
+        }
+
+        .collapsible-header {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .collapsible-header:hover {
+            background-color: #f1f5f9;
+        }
+
+        /* 思考时间样式 */
+        .thinking-time {
+            font-size: 0.8rem;
+            color: #6b7280;
+            background-color: #f3f4f6;
+            padding: 0.15rem 0.4rem;
+            border-radius: 0.25rem;
+            margin-left: 0.5rem;
+        }
+
+        .thinking-item {
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+
+        .thinking-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .thinking-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .thinking-text {
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            background-color: #f9fafb;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .step-header:hover {
+            background-color: #f1f5f9;
+            border-radius: 4px;
+        }
+
+        .step-detail {
+            transition: all 0.3s ease;
+        }
+
+        .thinking-container {
+            max-width: 85%; /* 与消息气泡宽度一致 */
+            margin-left: auto;
+            margin-right: auto;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+            background-color: #f8fafc;
+            border-radius: 8px;
+            padding: 16px;
+            border-left: 4px solid #3b82f6;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .thinking-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .thinking-content {
+            font-size: 14px;
+            color: #4b5563;
+            line-height: 1.6;
+            padding: 4px;
+            max-height: 300px; /* 添加最大高度 */
+            overflow-y: auto; /* 添加滚动条 */
+            white-space: pre-wrap; /* 确保空格和换行被保留 */
+        }
+
+        .thinking-step {
+            margin-bottom: 8px;
+        }
+
+        .final-answer {
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .answer-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        /* 删除文档按钮 */
+        .delete-doc-btn {
+            opacity: 0;
+            transition: opacity 0.3s, color 0.2s;
+            color: #9ca3af;
+        }
+
+        .doc-card:hover .delete-doc-btn {
+            opacity: 1;
+        }
+
+        .delete-doc-btn:hover {
+            color: #ef4444;
+        }
+
+        .confirm-modal {
+            animation: modalEnter 0.3s ease forwards;
+        }
+
+        @keyframes modalEnter {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .deep-think-btn {
+            display: inline-flex;
+            align-items: center;
+            background-color: #f1f5f9;
+            border-radius: 9999px;
+            padding: 5px 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+            border: 1px solid #cbd5e1;
+        }
+
+        .deep-think-btn:hover {
+            background-color: #e2e8f0;
+        }
+
+        .deep-think-btn.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        .deep-think-btn.active .toggle-switch {
+            background-color: white;
+        }
+
+        .reAct-Prompt-btn {
+            display: inline-flex;
+            align-items: center;
+            background-color: #f1f5f9;
+            border-radius: 9999px;
+            padding: 5px 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+            border: 1px solid #cbd5e1;
+        }
+
+        .reAct-Prompt-btn:hover {
+            background-color: #e2e8f0;
+        }
+
+        .reAct-Prompt-btn.active {
+            background-color: #10b247;
+            color: white;
+        }
+
+        .reAct-Prompt-btn.active .toggle-switch {
+            background-color: white;
+        }
+
+        .cot-Prompt-btn {
+            display: inline-flex;
+            align-items: center;
+            background-color: #f1f5f9;
+            border-radius: 9999px;
+            padding: 5px 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+            border: 1px solid #cbd5e1;
+        }
+
+        .cot-Prompt-btn:hover {
+            background-color: #e2e8f0;
+        }
+
+        .cot-Prompt-btn.active {
+            background-color: #ff6100;
+            color: white;
+        }
+
+        .cot-Prompt-btn.active .toggle-switch {
+            background-color: white;
+        }
+
+        .toggle-switch {
+            width: 18px;
+            height: 18px;
+            background-color: #94a3b8;
+            border-radius: 50%;
+            margin-right: 6px;
+            transition: background-color 0.2s ease;
+        }
+
+        .thinking-section {
+            margin-bottom: 5px;
+        }
+
+        .main-chat-area {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 64px); /* 减去头部高度 */
+        }
+
+        #chat-container {
+            flex-grow: 1; /* 占据可用空间 */
+            overflow-y: auto; /* 垂直滚动 */
+            padding: 1.5rem;
+        }
+
+        .chat-input-container {
+            flex-shrink: 0; /* 防止输入区域被挤压 */
+            border-top: 1px solid #e5e7eb;
+            background: white;
+            padding: 1rem;
+        }
+
+        .typewriter-text::after {
+            content: '|';
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0;
+            }
+        }
+
+        .doc-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .upload-area {
+            border: 2px dashed #d1d5db;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover, .upload-area.drag-over {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+
+        .message-bubble {
+            max-width: 85%;
+        }
+
+        .session-item.active {
+            background-color: #eff6ff;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .resizer {
+            width: 4px;
+            background: #e5e7eb;
+            cursor: col-resize;
+            transition: background-color 0.2s;
+        }
+
+        .resizer:hover, .resizer.resizing {
+            background: #3b82f6;
+        }
+
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c5c5c5;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        /* 网格布局容器 */
+        .app-container {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            height: 100vh;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: auto auto 1fr;
+            overflow: hidden;
+            height: calc(100vh - 64px);
+        }
+
+        /* 移动端优化 */
+        @media (max-width: 1024px) {
+            #sidebar {
+                position: fixed;
+                left: 0;
+                top: 64px;
+                bottom: 0;
+                z-index: 40;
+                width: 320px;
+                transform: translateX(-100%);
+                transition: all 0.3s ease;
+                box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
+            }
+
+            #sidebar.active {
+                transform: translateX(0);
+            }
+
+            .resizer {
+                display: none;
+            }
+
+            .hide-on-mobile {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+<!-- 导航栏 -->
+<header class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-md py-2">
+    <div class="container mx-auto px-4 flex justify-between items-center">
+        <div class="flex items-center">
+            <button id="toggle-sidebar" class="mr-3 text-white hover:text-blue-200 lg:hidden">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+            <div class="flex items-center">
+                <i class="fas fa-carrot text-2xl mr-3" style="color: #FF6B35;"></i>
+                <h1 class="text-xl sm:text-2xl font-bold">Spring-AI Demo</h1>
+            </div>
+        </div>
+        <div class="flex items-center space-x-4">
+            <div class="hidden md:flex items-center space-x-4">
+                <div class="relative">
+                    <i class="fas fa-user-circle text-xl"></i>
+                    <span class="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full border-2 border-white"></span>
+                </div>
+                <span id="user-id" class="font-medium">用户ID: 20240001</span>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- 主内容区 -->
+<div class="main-content">
+    <!-- 左侧边栏 - 文档与会话管理 -->
+    <div id="sidebar" class="w-80 bg-white border-r border-gray-200 flex flex-col">
+        <div class="p-4">
+            <button id="new-session-btn"
+                    class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2.5 px-4 rounded-lg flex items-center justify-center transition-all shadow-md hover:shadow-lg">
+                <i class="fas fa-plus mr-2"></i> 开启新对话
+            </button>
+        </div>
+
+        <!-- 会话列表 -->
+        <div class="px-4 py-3 border-t border-gray-200">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="font-semibold text-gray-700">历史会话</h2>
+            </div>
+            <div id="session-list" class="space-y-2 max-h-60 overflow-y-auto">
+                <div class="p-3 text-center text-gray-500">
+                    <i class="fas fa-spinner fa-spin mr-2"></i> 加载中...
+                </div>
+            </div>
+        </div>
+
+        <!-- 文档列表 -->
+        <div class="flex-1 p-4 border-t border-gray-200 overflow-y-auto">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="font-semibold text-gray-700">知识库文档</h2>
+                <button id="upload-modal-btn" class="text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-cloud-upload-alt"></i> 上传
+                </button>
+            </div>
+            <div id="document-list" class="space-y-3">
+                <div class="p-3 text-center text-gray-500">
+                    <i class="fas fa-spinner fa-spin mr-2"></i> 加载文档...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 可调节的分割栏 -->
+    <div class="resizer" id="sidebar-resizer"></div>
+
+    <!-- 主聊天区域 -->
+    <div class="flex-1 flex flex-col">
+        <!-- 顶部信息栏（移动端） -->
+        <div class="md:hidden bg-white py-2 px-4 border-b flex items-center justify-between">
+            <div class="flex items-center">
+                <div class="relative">
+                    <i class="fas fa-user-circle text-xl"></i>
+                    <span class="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full border-2 border-white"></span>
+                </div>
+                <span id="mobile-user-id" class="font-medium ml-2">20240001</span>
+            </div>
+            <span>会话ID: <span id="current-session-id" class="font-mono">ses_9a8b7c6d5e</span></span>
+        </div>
+        <div class="main-chat-area">
+            <!-- 聊天记录区域 -->
+            <div id="chat-container" class="chat-input-container flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+                <div class="message-bubble max-w-3xl mx-auto">
+                    <div class="flex items-start space-x-3">
+                        <div class="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                            <i class="fas fa-robot text-white text-sm"></i>
+                        </div>
+                        <div class="bg-blue-50 p-4 rounded-2xl rounded-tl-none">
+                            <p>
+                                您好！我是基于您知识库文档的智能问答助手。您可以上传文档丰富知识库，然后向我提问文档相关的问题。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 输入区域 -->
+            <div class="chat-input-box border-t border-gray-200 bg-white p-4">
+                <div class="max-w-5xl mx-auto">
+                    <!-- 上传文档提示 -->
+                    <div class="flex items-center text-sm text-gray-500 mb-2">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <span>当前会话ID: <span id="desktop-session-id"
+                                                class="font-mono bg-gray-100 px-1.5 py-0.5 rounded">ses_9a8b7c6d5e</span></span>
+                        <button id="show-file-btn" class="ml-3 text-blue-600 hover:text-blue-800">
+                            <i class="fas fa-paperclip mr-1"></i> 上传文档
+                        </button>
+                        <!-- 添加深度思考按钮 -->
+                        <div class="deep-think-btn ml-3" id="deep-think-toggle">
+                            <div class="toggle-switch"></div>
+                            <span class="text-sm">深度思考</span>
+                        </div>
+                        <div class="prompt-btn-group">
+                            <!-- 添加ReActPrompt按钮 -->
+                            <div class="reAct-Prompt-btn ml-3" id="reAct-Prompt-toggle">
+                                <div class="toggle-switch"></div>
+                                <span class="text-sm">ReActPrompt(会让框架ReAct失效)</span>
+                            </div>
+                            <!-- 新增的 CotPrompt 按钮 -->
+                            <div class="cot-Prompt-btn ml-3" id="cot-Prompt-toggle">
+                                <div class="toggle-switch"></div>
+                                <span class="text-sm">CotPrompt</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-end space-x-2">
+                        <div class="flex-1 bg-gray-100 rounded-2xl px-4 py-3">
+                            <textarea
+                                    id="message-input"
+                                    rows="3"
+                                    placeholder="输入您的问题..."
+                                    class="w-full bg-transparent resize-none focus:outline-none max-h-40"
+                            ></textarea>
+                        </div>
+                        <button id="send-btn"
+                                class="w-12 h-12 rounded-full bg-blue-500 hover:bg-blue-600 flex items-center justify-center transition-all text-white shadow-md hover:shadow-lg">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+
+                    <div class="mt-2 text-xs text-gray-500 text-center">
+                        按 Enter 发送, Shift+Enter 换行
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 上传文档模态框 -->
+<div id="upload-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl w-full max-w-md">
+        <div class="p-5 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-lg font-medium">上传文档到知识库</h3>
+            <button id="close-modal" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="p-6">
+            <div id="upload-area" class="upload-area rounded-lg p-6 sm:p-10 text-center mb-4 cursor-pointer">
+                <i class="fas fa-cloud-upload-alt text-4xl text-blue-400 mb-3"></i>
+                <p class="font-medium text-gray-800">拖放文件到此处</p>
+                <p class="text-gray-500 text-sm mt-1">支持PDF、Word、Excel、TXT等文档格式</p>
+                <p class="text-gray-500 text-sm">或</p>
+                <button id="file-select-btn" class="mt-3 text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-folder-open mr-1"></i> 选择文件
+                </button>
+            </div>
+            <input type="file" id="file-input" class="hidden" multiple>
+
+            <div id="file-preview" class="space-y-3 max-h-60 overflow-y-auto p-2 hidden">
+                <!-- 文件预览将动态添加 -->
+            </div>
+
+            <div class="mt-6">
+                <button id="confirm-upload"
+                        class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2.5 px-4 rounded-lg transition-all">
+                    上传文档
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 确认删除模态框 -->
+<div id="delete-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl w-full max-w-md confirm-modal">
+        <div class="p-5 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-lg font-medium text-red-600">
+                <i class="fas fa-exclamation-triangle mr-2"></i>删除文档确认
+            </h3>
+            <button id="close-delete-modal" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="p-6">
+            <div class="text-center mb-6">
+                <div class="flex justify-center text-red-500 mb-4">
+                    <i class="fas fa-trash text-5xl"></i>
+                </div>
+                <p class="text-lg font-medium mb-1">确定要删除此文档吗？</p>
+                <p id="delete-doc-name" class="text-gray-700 mb-4 font-medium"></p>
+                <p class="text-gray-500 text-sm">此操作无法撤销，文档将被永久删除！</p>
+            </div>
+
+            <div class="flex justify-between mt-6">
+                <button id="cancel-delete"
+                        class="flex-1 mr-3 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2.5 px-4 rounded-lg transition-all">
+                    取消
+                </button>
+                <button id="confirm-delete"
+                        class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2.5 px-4 rounded-lg transition-all">
+                    确定删除
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 配置API基础URL
+    const API_BASE_URL = 'http://localhost:8080';
+
+    // 当前会话状态
+    const state = {
+        userId: "20240001",
+        currentSessionId: 'ses_' + Math.random().toString(36).substr(2, 9),
+        sessions: [],
+        documents: [],
+        sidebarWidth: 320,
+        minSidebarWidth: 220,
+        maxSidebarWidth: 480,
+        isDeepThinking: false, // 新增深度思考状态
+        isReActPrompt: false, // 新增ReActPrompt状态
+        isCotPrompt: false, // 新增 CotPrompt 状态
+        deletingDoc: null, // 当前正在删除的文档
+        accumulatedThinking: '', // 用于累积思考内容
+        thinkingStartTime: null, // 记录思考开始时间
+        thinkingTimer: null // 思考计时器
+    };
+
+    // DOM元素
+    const domElements = {
+        messageInput: document.getElementById('message-input'),
+        sendBtn: document.getElementById('send-btn'),
+        chatContainer: document.getElementById('chat-container'),
+        uploadModalBtn: document.getElementById('upload-modal-btn'),
+        uploadModal: document.getElementById('upload-modal'),
+        closeModal: document.getElementById('close-modal'),
+        uploadArea: document.getElementById('upload-area'),
+        fileSelectBtn: document.getElementById('file-select-btn'),
+        fileInput: document.getElementById('file-input'),
+        filePreview: document.getElementById('file-preview'),
+        confirmUpload: document.getElementById('confirm-upload'),
+        newSessionBtn: document.getElementById('new-session-btn'),
+        showFileBtn: document.getElementById('show-file-btn'),
+        mobileUserId: document.getElementById('mobile-user-id'),
+        currentSessionId: document.getElementById('current-session-id'),
+        desktopSessionId: document.getElementById('desktop-session-id'),
+        sessionList: document.getElementById('session-list'),
+        documentList: document.getElementById('document-list'),
+        sidebar: document.getElementById('sidebar'),
+        toggleSidebarBtn: document.getElementById('toggle-sidebar'),
+        sidebarResizer: document.getElementById('sidebar-resizer'),
+        deepThinkToggle: document.getElementById('deep-think-toggle'),
+        reActPromptToggle: document.getElementById('reAct-Prompt-toggle'),
+        cotPromptToggle: document.getElementById('cot-Prompt-toggle'), // 新增
+        thinkingContainer: document.getElementById('thinking-container'),
+        thinkingContent: document.getElementById('thinking-content'),
+        deleteModal: document.getElementById('delete-modal'),
+        closeDeleteModal: document.getElementById('close-delete-modal'),
+        cancelDelete: document.getElementById('cancel-delete'),
+        confirmDelete: document.getElementById('confirm-delete'),
+        deleteDocName: document.getElementById('delete-doc-name')
+    };
+
+    // 初始化深度思考按钮
+    function initDeepThinkButton() {
+        domElements.deepThinkToggle.addEventListener('click', () => {
+            state.isDeepThinking = !state.isDeepThinking;
+            toggleButtonState(domElements.deepThinkToggle, state.isDeepThinking);
+        });
+    }
+
+    // 初始化 ReActPrompt 按钮
+    function initReActPromptButton() {
+        domElements.reActPromptToggle.addEventListener('click', () => {
+            // 互斥逻辑：激活 ReActPrompt 时关闭 CotPrompt
+            if (!state.isReActPrompt) {
+                state.isReActPrompt = true;
+                state.isCotPrompt = false;
+            } else {
+                state.isReActPrompt = false;
+            }
+            updateAllButtonStates();
+        });
+    }
+
+    function initCotPromptButton() {
+        domElements.cotPromptToggle.addEventListener('click', () => {
+            // 互斥逻辑：激活 CotPrompt 时关闭 ReActPrompt
+            if (!state.isCotPrompt) {
+                state.isCotPrompt = true;
+                state.isReActPrompt = false;
+            } else {
+                state.isCotPrompt = false;
+            }
+
+            updateAllButtonStates();
+        });
+    }
+
+    function updateAllButtonStates() {
+        toggleButtonState(domElements.reActPromptToggle, state.isReActPrompt);
+        toggleButtonState(domElements.cotPromptToggle, state.isCotPrompt);
+    }
+
+
+    // 按钮状态切换函数
+    function toggleButtonState(element, isActive) {
+        if (isActive) {
+            element.classList.add('active');
+        } else {
+            element.classList.remove('active');
+        }
+    }
+
+    // 初始化页面
+    function initializePage() {
+        // 设置初始会话ID
+        domElements.currentSessionId.innerText = state.currentSessionId;
+        domElements.desktopSessionId.innerText = state.currentSessionId;
+        domElements.mobileUserId.innerText = state.userId;
+
+        // 设置初始侧边栏宽度
+        domElements.sidebar.style.width = `${state.sidebarWidth}px`;
+
+        // 加载会话列表
+        loadSessions();
+
+        // 加载文档列表
+        loadDocuments();
+
+        // 初始化事件监听器
+        initEventListeners();
+
+        // 初始化分割栏
+        initResizer();
+
+        // 初始化深度思考区域
+        initDeepThinkButton();
+
+        // 初始化ReActPrompt按钮
+        initReActPromptButton();
+
+        // 初始化CotPrompt按钮
+        initCotPromptButton();
+
+        // 初始化删除确认对话框事件
+        initDeleteModalListeners();
+    }
+
+    // 格式化思考内容为结构化的HTML
+    function formatThinkingContent(thinkingData) {
+        if (!thinkingData || thinkingData.length === 0) {
+            return '<div class="text-gray-500 text-sm italic">无思考内容</div>';
+        }
+        // 直接拼接所有思考内容
+        return thinkingData.map(step => {
+            // 如果有标题，显示标题和内容
+            if (step.title && step.title.trim() !== '') {
+                return `
+                <div class="thinking-item mb-2">
+                    <div class="thinking-title text-sm font-medium text-blue-600 mb-1">
+                        ${step.title}
+                    </div>
+                    <div class="thinking-text text-gray-700">
+                        ${step.content}
+                    </div>
+                </div>
+            `;
+            }
+            // 没有标题，直接显示内容
+            return `<div class="thinking-text text-gray-700 mb-2">${step.content}</div>`;
+        }).join('');
+    }
+
+    // 添加全局函数用于切换步骤显示
+    window.toggleStepDetails = function (index) {
+        const stepDetail = document.getElementById(`step-detail-${index}`);
+        if (stepDetail) {
+            stepDetail.classList.toggle('hidden');
+            const icon = stepDetail.previousElementSibling.querySelector('i');
+            if (icon) {
+                icon.classList.toggle('fa-chevron-down');
+                icon.classList.toggle('fa-chevron-up');
+            }
+        }
+    };
+
+    // 初始化删除模态框事件监听器
+    function initDeleteModalListeners() {
+        // 关闭模态框
+        domElements.closeDeleteModal.addEventListener('click', () => {
+            domElements.deleteModal.classList.add('hidden');
+            state.deletingDoc = null;
+        });
+
+        // 取消删除
+        domElements.cancelDelete.addEventListener('click', () => {
+            domElements.deleteModal.classList.add('hidden');
+            state.deletingDoc = null;
+        });
+
+        // 确认删除
+        domElements.confirmDelete.addEventListener('click', confirmDeleteDocument);
+    }
+
+    // 显示删除确认模态框
+    function showDeleteConfirmModal(docIds, docName) {
+        state.deletingDoc = {
+            ids: docIds,
+            name: docName
+        };
+        domElements.deleteDocName.textContent = `"${docName}"`;
+        domElements.deleteModal.classList.remove('hidden');
+    }
+
+    // 确认删除文档
+    function confirmDeleteDocument() {
+        if (!state.deletingDoc) return;
+
+        const docIds = state.deletingDoc.ids;
+        const docName = state.deletingDoc.name;
+        console.log(`确认删除文档: ${docName} (ID: ${docIds})`);
+        // 显示删除中状态
+        const prevText = domElements.confirmDelete.innerHTML;
+        domElements.confirmDelete.disabled = true;
+        domElements.confirmDelete.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>删除中`;
+
+        // 构建URL编码的参数（适用于@RequestParam接收数组）
+        const params = new URLSearchParams();
+        docIds.forEach(id => params.append('docIdList', id));
+        // 调用后端删除接口
+        fetch(`${API_BASE_URL}/file/delete/document?${params.toString()}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 从文档列表中移除已删除的文档
+                    state.documents = state.documents.filter(doc =>
+                        doc.name !== state.deletingDoc.name
+                    );
+                    renderDocumentList();
+                    addSystemMessage(`文档 "${docName}" 已成功删除`);
+                } else {
+                    addSystemMessage(`删除失败: ${data.resultMsg || '未知错误'}`, true);
+                }
+            })
+            .catch(error => {
+                console.error('删除文档失败:', error);
+                addSystemMessage('删除文档时出错，请重试', true);
+            })
+            .finally(() => {
+                domElements.deleteModal.classList.add('hidden');
+                state.deletingDoc = null;
+                domElements.confirmDelete.disabled = false;
+                domElements.confirmDelete.innerHTML = prevText;
+            });
+    }
+
+    // 初始化可调节分割栏
+    function initResizer() {
+        let isResizing = false;
+        let startX = 0;
+        let startWidth = 0;
+
+        domElements.sidebarResizer.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            startX = e.clientX;
+            startWidth = state.sidebarWidth;
+
+            document.body.style.cursor = 'col-resize';
+            domElements.sidebarResizer.classList.add('resizing');
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+
+            let moveX = e.clientX - startX;
+            let newWidth = startWidth + moveX;
+
+            // 限制最小和最大宽度
+            if (newWidth < state.minSidebarWidth) {
+                newWidth = state.minSidebarWidth;
+            }
+            if (newWidth > state.maxSidebarWidth) {
+                newWidth = state.maxSidebarWidth;
+            }
+
+            state.sidebarWidth = newWidth;
+            domElements.sidebar.style.width = `${newWidth}px`;
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (!isResizing) return;
+
+            isResizing = false;
+            document.body.style.cursor = '';
+            domElements.sidebarResizer.classList.remove('resizing');
+        });
+    }
+
+    // 加载会话列表
+    function loadSessions() {
+        fetch(`${API_BASE_URL}/session/list?userId=${state.userId}`)
+            .then(response => {
+                if (!response.ok) throw new Error('获取会话失败');
+                return response.json();
+            })
+            .then(data => {
+                state.sessions = data || [];
+                renderSessionList();
+            })
+            .catch(error => {
+                console.error('加载会话错误:', error);
+                renderSessionList();
+            });
+    }
+
+    // 渲染会话列表
+    function renderSessionList() {
+        if (state.sessions.length === 0) {
+            domElements.sessionList.innerHTML = `
+                    <div class="p-3 text-center text-gray-500">
+                        <i class="fas fa-comments mr-2"></i> 暂无历史会话
+                    </div>
+                `;
+            return;
+        }
+
+        let html = '';
+        state.sessions.forEach(session => {
+            const isActive = session.id === state.currentSessionId;
+            html += `
+                    <div data-id="${session.id}" class="session-item p-3 rounded-lg cursor-pointer transition-all ${isActive ? 'active bg-blue-50' : 'hover:bg-gray-100'}">
+                        <div class="flex justify-between">
+                            <span class="font-medium truncate">${session.title || '未命名会话'}</span>
+                            <span class="text-xs text-gray-500 whitespace-nowrap">${formatDate(session.createdAt)}</span>
+                        </div>
+                        <p class="text-sm text-gray-600 truncate mt-1">${session.lastMessage || '新会话'}</p>
+                    </div>
+                `;
+        });
+
+        domElements.sessionList.innerHTML = html;
+
+        // 添加会话选择事件
+        document.querySelectorAll('.session-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const sessionId = item.dataset.id;
+                selectSession(sessionId);
+            });
+        });
+    }
+
+    // 加载文档列表
+    function loadDocuments() {
+        fetch(`${API_BASE_URL}/file/search/document?userId=${state.userId}`)
+            .then(response => {
+                if (!response.ok) throw new Error('获取文档失败');
+                return response.json();
+            })
+            .then(data => {
+                console.log('文档数据:', data);
+                // 1. 验证整个返回结构
+                if (!data || !data.success) {
+                    const errorMsg = data ? data.resultMsg : '未知错误';
+                    console.error('获取文档失败:', errorMsg);
+                    state.documents = [];
+                    renderDocumentList();
+                    return;
+                }
+                // 使用Map聚合同名文档
+                const docMap = new Map();
+                data.t.forEach(doc => {
+                    const key = `${doc.fileName}|${doc.fileType}`;
+                    if (!docMap.has(key)) {
+                        docMap.set(key, {
+                            name: doc.fileName,
+                            type: doc.fileType,
+                            docIds: [], // 存储所有同名文档的ID
+                            uploadedAt: new Date().toISOString()
+                        });
+                    }
+                    // 确保docId是数组（兼容后端返回）
+                    const ids = Array.isArray(doc.docId) ? doc.docId : [doc.docId];
+                    docMap.get(key).docIds.push(...ids);
+                });
+
+                // 转换为数组
+                state.documents = Array.from(docMap.values());
+                renderDocumentList();
+            })
+            .catch(error => {
+                console.error('加载文档错误:', error);
+                state.documents = [];
+                renderDocumentList();
+            });
+    }
+
+    // 修改渲染函数以使用新字段
+    function renderDocumentList() {
+        if (state.documents.length === 0) {
+            domElements.documentList.innerHTML = `
+            <div class="p-3 text-center text-gray-500">
+                <i class="fas fa-folder-open mr-2"></i> 暂无上传文档
+            </div>
+        `;
+            return;
+        }
+
+        let html = '';
+        state.documents.forEach(doc => {
+            html += `
+            <div class="doc-card flex items-center p-3 bg-white rounded-lg border border-gray-200 hover:shadow transition-all">
+                <div class="bg-gray-200 rounded-lg w-10 h-10 flex items-center justify-center ${getFileIcon(doc.type)}">
+                    <i class="${getFileIcon(doc.type)}"></i>
+                </div>
+                <div class="ml-3 flex-1 min-w-0">
+                    <p class="font-medium text-sm truncate doc-name">${doc.name}</p>
+                    <p class="text-xs text-gray-500 truncate">类型: ${doc.type}</p>
+                </div>
+                <button class="delete-doc-btn ml-3 bg-transparent border-none cursor-pointer"
+                        data-docids='${JSON.stringify(doc.docIds)}'
+                        data-docname="${doc.name}"
+                        title="删除文档">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+        });
+
+        domElements.documentList.innerHTML = html;
+
+        // 为删除按钮添加事件监听
+        document.querySelectorAll('.delete-doc-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation(); // 阻止事件冒泡
+                const docIds = JSON.parse(btn.dataset.docids);
+                const docName = btn.dataset.docname;
+                showDeleteConfirmModal(docIds, docName);
+            });
+        });
+    }
+
+    // 获取文件图标
+    function getFileIcon(fileType) {
+        // 转为小写统一处理
+        const type = fileType?.toLowerCase() || '';
+        if (type.includes('pdf')) return 'fas fa-file-pdf text-red-500';
+        if (type.includes('word') || type.includes('doc')) return 'fas fa-file-word text-blue-600';
+        if (type.includes('excel') || type.includes('xls')) return 'fas fa-file-excel text-green-600';
+        if (type.includes('powerpoint') || type.includes('ppt')) return 'fas fa-file-powerpoint text-orange-500';
+        if (type.includes('image')) return 'fas fa-file-image text-purple-500';
+        if (type.includes('audio')) return 'fas fa-file-audio text-yellow-500';
+        if (type.includes('video')) return 'fas fa-file-video text-pink-500';
+        if (type.includes('zip') || type.includes('rar') || type.includes('tar')) return 'fas fa-file-archive text-gray-600';
+        // 添加 .txt 文件类型的处理
+        if (type.includes('txt') || type.includes('text/plain')) return 'fas fa-file-lines text-blue-400';
+        // 处理其他文本类型
+        if (type.includes('text') || type.includes('plain')) return 'fas fa-file-lines text-gray-700';
+        return 'fas fa-file text-gray-600';
+    }
+
+    // 格式化日期
+    function formatDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('zh-CN');
+    }
+
+    // 选择会话
+    function selectSession(sessionId) {
+        state.currentSessionId = sessionId;
+        domElements.currentSessionId.innerText = sessionId;
+        domElements.desktopSessionId.innerText = sessionId;
+
+        // 更新会话列表的选中状态
+        renderSessionList();
+
+        // 加载该会话的历史消息
+        loadChatHistory(sessionId);
+    }
+
+    // 加载聊天历史
+    function loadChatHistory(sessionId) {
+        // 在这里实现获取聊天历史的API调用
+        // 暂时显示一条系统消息
+        domElements.chatContainer.innerHTML = `
+                <div class="message-bubble max-w-5xl mx-auto">
+                    <div class="flex items-start space-x-3">
+                        <div class="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                            <i class="fas fa-robot text-white text-sm"></i>
+                        </div>
+                        <div class="bg-blue-50 p-4 rounded-2xl rounded-tl-none">
+                            <p>已切换到会话 <span class="font-mono">${sessionId}</span>。您可以继续提问。</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+    }
+
+    // 初始化事件监听器
+    function initEventListeners() {
+        // 发送消息
+        domElements.sendBtn.addEventListener('click', sendMessage);
+        domElements.messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // 管理消息输入框高度
+        domElements.messageInput.addEventListener('input', () => {
+            domElements.messageInput.style.height = 'auto';
+            domElements.messageInput.style.height = Math.min(domElements.messageInput.scrollHeight, 150) + 'px';
+        });
+
+        // 上传文档
+        domElements.uploadModalBtn.addEventListener('click', () => domElements.uploadModal.classList.remove('hidden'));
+        domElements.showFileBtn.addEventListener('click', () => domElements.uploadModal.classList.remove('hidden'));
+        domElements.closeModal.addEventListener('click', () => {
+            domElements.uploadModal.classList.add('hidden');
+            domElements.filePreview.classList.add('hidden');
+            domElements.fileInput.value = '';
+        });
+
+        // 文件选择
+        domElements.fileSelectBtn.addEventListener('click', () => domElements.fileInput.click());
+        domElements.uploadArea.addEventListener('click', () => domElements.fileInput.click());
+
+        // 拖放事件
+        domElements.uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            domElements.uploadArea.classList.add('drag-over');
+        });
+
+        domElements.uploadArea.addEventListener('dragleave', () => {
+            domElements.uploadArea.classList.remove('drag-over');
+        });
+
+        domElements.uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            domElements.uploadArea.classList.remove('drag-over');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        // 文件输入变化
+        domElements.fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+        // 确认上传
+        domElements.confirmUpload.addEventListener('click', uploadDocuments);
+
+        // 创建新会话
+        domElements.newSessionBtn.addEventListener('click', createNewSession);
+
+        // 切换侧边栏显示
+        domElements.toggleSidebarBtn.addEventListener('click', () => {
+            domElements.sidebar.classList.toggle('active');
+        });
+    }
+
+    // 处理选中的文件
+    function handleFiles(files) {
+        if (files.length === 0) return;
+
+        domElements.filePreview.innerHTML = '';
+        domElements.filePreview.classList.remove('hidden');
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+
+            const preview = document.createElement('div');
+            preview.className = 'flex items-center p-3 bg-gray-50 rounded-lg';
+            preview.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-3 ${getFileIcon(file.name)}">
+                        <i class="${getFileIcon(file.name)} text-sm"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-medium text-sm truncate">${file.name}</p>
+                        <p class="text-xs text-gray-500">${formatFileSize(file.size)}</p>
+                    </div>
+                `;
+
+            domElements.filePreview.appendChild(preview);
+        }
+    }
+
+    // 格式化文件大小
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // 上传文档到后端
+    function uploadDocuments() {
+        const files = domElements.fileInput.files;
+        if (files.length === 0) return;
+
+        const formData = new FormData();
+        // 只取第一个文件（兼容单文件后端）
+        formData.append('files', files[0]);
+        formData.append('userId', state.userId);
+        formData.append('sessionId', state.currentSessionId);
+
+        // 显示上传状态
+        const prevText = domElements.confirmUpload.innerText;
+        domElements.confirmUpload.disabled = true;
+        domElements.confirmUpload.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>上传中...`;
+
+        // 调用后端接口
+        fetch(`${API_BASE_URL}/file/import/documents`, {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => {
+                if (!response.ok) throw new Error('上传失败');
+                return response.json();
+            })
+            .then(data => {
+                // 添加系统消息
+                addSystemMessage(`已成功上传 ${files.length} 个文档到知识库`);
+
+                // 重新加载文档列表
+                loadDocuments();
+
+                // 关闭模态框
+                domElements.uploadModal.classList.add('hidden');
+            })
+            .catch(error => {
+                console.error('上传失败:', error);
+                addSystemMessage('文档上传失败，请重试', true);
+            })
+            .finally(() => {
+                domElements.confirmUpload.disabled = false;
+                domElements.confirmUpload.innerHTML = prevText;
+                domElements.filePreview.classList.add('hidden');
+                domElements.fileInput.value = '';
+            });
+    }
+
+    // 添加系统消息
+    function addSystemMessage(message, isError = false) {
+        const bubble = document.createElement('div');
+        bubble.className = `message-bubble max-w-5xl mx-auto mt-4`;
+
+        bubble.innerHTML = `
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-${isError ? 'red' : 'blue'}-500">
+                        <i class="fas ${isError ? 'fa-exclamation-circle' : 'fa-info-circle'} text-white text-sm"></i>
+                    </div>
+                    <div class="bg-${isError ? 'red' : 'blue'}-50 p-4 rounded-2xl rounded-tl-none">
+                        <p>${message}</p>
+                    </div>
+                </div>
+            `;
+
+        domElements.chatContainer.appendChild(bubble);
+        scrollToBottom();
+    }
+
+    // 创建新会话
+    function createNewSession() {
+        const sessionId = 'ses_' + Math.random().toString(36).substr(2, 9);
+        state.currentSessionId = sessionId;
+        domElements.currentSessionId.innerText = sessionId;
+        domElements.desktopSessionId.innerText = sessionId;
+
+        // 添加到会话列表
+        state.sessions.unshift({
+            id: sessionId,
+            title: '新会话',
+            createdAt: new Date().toISOString(),
+            lastMessage: null
+        });
+
+        // 更新会话列表
+        renderSessionList();
+
+        // 清空聊天内容
+        domElements.chatContainer.innerHTML = `
+                <div class="message-bubble max-w-5xl mx-auto">
+                    <div class="flex items-start space-x-3">
+                        <div class="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                            <i class="fas fa-robot text-white text-sm"></i>
+                        </div>
+                        <div class="bg-blue-50 p-4 rounded-2xl rounded-tl-none">
+                            <p>已创建新的会话（ID: <span class="font-mono">${sessionId}</span>）。您可以上传文档或直接开始提问。</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+    }
+
+    // 发送用户消息
+    function sendMessage() {
+        const message = domElements.messageInput.value.trim();
+        if (!message) return;
+
+        // 清空输入框
+        domElements.messageInput.value = '';
+        domElements.messageInput.style.height = 'auto';
+
+        // 添加用户消息到聊天界面
+        addMessageToChat('user', message);
+
+        // 模拟滚动到底部
+        scrollToBottom();
+
+        // 调用聊天API（流式返回）
+        callChatAPI(message);
+    }
+
+    // 添加消息到聊天界面
+    function addMessageToChat(sender, content, isStreaming = false) {
+        const bubble = document.createElement('div');
+        bubble.className = `message-bubble max-w-5xl mx-auto mt-4 ${sender}-message`;
+
+        // 用户头像使用渐变蓝色背景
+        const userAvatar = `
+        <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center
+            bg-gradient-to-r from-purple-400 to-indigo-400">
+            <i class="fas fa-user text-white text-sm"></i>
+        </div>
+    `;
+
+        // AI头像保持原有样式
+        const aiAvatar = `
+        <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-blue-500">
+            <i class="fas fa-robot text-white text-sm"></i>
+        </div>
+    `;
+
+        bubble.innerHTML = `
+        <div class="flex items-start space-x-3">
+            ${sender === 'user' ? userAvatar : aiAvatar}
+            <div class="message-bubble-content">
+                ${isStreaming ? `<div class="typewriter-text">${content}</div>` :
+            (sender === 'assistant' ? marked.parse(content) : content)}
+            </div>
+        </div>
+    `;
+
+        domElements.chatContainer.appendChild(bubble);
+
+        // 如果不是流式消息，直接滚动到底部
+        if (!isStreaming) {
+            scrollToBottom();
+        }
+    }
+
+    // 更新思考时间显示
+    function updateThinkingTime(container, isFinal = false) {
+        if (!state.thinkingStartTime) return;
+
+        const now = new Date();
+        const elapsedSeconds = Math.floor((now - state.thinkingStartTime) / 1000);
+
+        const timeElement = container.querySelector('.thinking-time');
+        if (timeElement) {
+            if (isFinal) {
+                timeElement.textContent = `（思考完成，用时: ${elapsedSeconds}秒）`;
+            } else {
+                timeElement.textContent = `（思考中，已用时: ${elapsedSeconds}秒）`;
+            }
+        }
+    }
+
+    function callChatAPI(message) {
+        // 添加AI消息占位符
+        addMessageToChat('assistant', '', true);
+        // 重置思考内容
+        state.accumulatedThinking = '';
+        // 重置思考计时器
+        if (state.thinkingTimer) {
+            clearInterval(state.thinkingTimer);
+            state.thinkingTimer = null;
+        }
+        state.thinkingStartTime = null;
+
+        // 获取AI消息元素
+        const aiBubbles = document.querySelectorAll('#chat-container > .message-bubble');
+        const aiBubble = aiBubbles[aiBubbles.length - 1];
+        const aiMessageElement = aiBubble.querySelector('.typewriter-text');
+
+        // 创建新的思考容器（即使深度思考未开启，也创建但隐藏）
+        const thinkingContainer = document.createElement('div');
+        thinkingContainer.id = 'thinking-container-' + Date.now(); // 使用唯一ID
+        thinkingContainer.className = 'thinking-container max-w-5xl mx-auto';
+
+        // 初始内容 - 显示思考已开始
+        thinkingContainer.innerHTML = `
+            <div class="collapsible-header" onclick="toggleCollapse('${thinkingContainer.id}')">
+                <div class="thinking-header flex items-center justify-between mb-2">
+                  <div class="thinking-title flex items-center">
+                    <i class="fas fa-star-and-crescent mr-2 text-indigo-500 animate-pulse"></i>
+                    <div class="font-medium">思考过程</div>
+                    <span class="thinking-time ml-2">（思考中，已用时: 0秒）</span>
+                  </div>
+                  <i class="fas fa-chevron-down collapse-icon text-gray-500"></i>
+                </div>
+              </div>
+              <div id="content-${thinkingContainer.id}" class="collapsible-content">
+                <div class="thinking-content" style="white-space: pre-wrap;">
+                  <div class="thinking-placeholder bg-indigo-50 rounded-lg p-4 flex items-center">
+                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-indigo-700 font-medium">思考已开始，正在分析问题</span>
+                    <span class="thinking-dots text-indigo-700 font-bold ml-1">
+                      <span>.</span><span>.</span><span>.</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            `;
+
+        // 根据深度思考状态决定是否显示
+        if (!state.isDeepThinking) {
+            thinkingContainer.style.display = 'none';
+        }
+
+        // 插入到AI消息之前
+        aiBubble.parentNode.insertBefore(thinkingContainer, aiBubble);
+
+        // 重置思考内容
+        state.accumulatedThinking = '';
+
+        // 重置思考计时器
+        if (state.thinkingTimer) {
+            clearInterval(state.thinkingTimer);
+            state.thinkingTimer = null;
+        }
+
+        // 记录思考开始时间
+        state.thinkingStartTime = new Date();
+
+        // 启动计时器每秒更新思考时间
+        state.thinkingTimer = setInterval(() => {
+            if (state.isDeepThinking && state.thinkingStartTime) {
+                updateThinkingTime(thinkingContainer);
+            }
+        }, 1000);
+
+        try {
+            // 安全地构建URL参数
+            const queryParams = new URLSearchParams({
+                query: message,
+                userId: state.userId,
+                sessionId: state.currentSessionId,
+                deepThink: state.isDeepThinking,
+                reActPrompt: state.isReActPrompt,
+                cotPrompt: state.isCotPrompt
+            });
+
+            const url = `${API_BASE_URL}/chat?${queryParams.toString()}`;
+
+            console.log(`正在连接到 SSE: ${url}`);
+
+            // 创建EventSource连接
+            const eventSource = new EventSource(url);
+
+            let responseContent = '';
+            // 改为使用字符串累积思考内容
+            let accumulatedThinking = '';
+
+            eventSource.onopen = () => {
+                console.log('SSE连接已打开');
+            };
+
+            eventSource.onmessage = (event) => {
+                console.log('接收到消息:', event.data);
+                try {
+                    const chatEvent = JSON.parse(event.data);
+                    // 处理不同类型的事件
+                    switch (chatEvent.type) {
+                        case 'THINKING':
+                            // 更新思考容器
+                            if (state.isDeepThinking) {
+                                // 显示思考容器
+                                if (thinkingContainer.style.display === 'none') {
+                                    thinkingContainer.style.display = 'block';
+                                }
+
+                                // 更新思考内容
+                                const contentElement = thinkingContainer.querySelector('.thinking-content');
+                                if (contentElement) {
+                                    // 移除初始提示
+                                    if (contentElement.innerHTML.includes('思考已开始')) {
+                                        contentElement.innerHTML = '';
+                                    }
+                                    accumulatedThinking += chatEvent.content;
+                                    contentElement.textContent = accumulatedThinking;
+                                    // 自动滚动到底部以显示最新内容
+                                    if (contentElement.scrollHeight > contentElement.clientHeight) {
+                                        contentElement.scrollTop = contentElement.scrollHeight;
+                                    }
+                                }
+                            }
+                            break;
+
+                        case 'ANSWER':
+                            // 处理最终答案
+                            responseContent += chatEvent.content;
+                            // aiMessageElement.textContent = responseContent;
+                            // 使用 Marked.js 解析 Markdown
+                            aiMessageElement.innerHTML = marked.parse(responseContent);
+                            scrollToBottom();
+                            // 核心修改：收到ANSWER事件时停止计时器
+                            if (state.thinkingTimer) {
+                                clearInterval(state.thinkingTimer);
+                                state.thinkingTimer = null;
+                                updateThinkingTime(thinkingContainer, true); // 标记为最终时间
+                            }
+                            break;
+                    }
+                } catch (e) {
+                    console.error('解析事件失败:', e);
+                    // 回退到直接展示
+                    responseContent += event.data;
+                    aiMessageElement.textContent = responseContent;
+                    scrollToBottom();
+                }
+            };
+
+            eventSource.onerror = (error) => {
+                console.warn('EventSource错误:', error);
+                eventSource.close();
+                aiMessageElement.classList.remove('typewriter-text');
+
+                if (!responseContent) {
+                    aiMessageElement.textContent = '后端服务连接失败';
+                    addSystemMessage('后端服务连接失败', true);
+                }
+
+                // 停止计时器
+                if (state.thinkingTimer) {
+                    clearInterval(state.thinkingTimer);
+                    state.thinkingTimer = null;
+                    updateThinkingTime(thinkingContainer, true);
+                }
+            };
+
+            // 保存eventSource以便后续可能的中断
+            state.currentEventSource = eventSource;
+        } catch (error) {
+            console.error('初始化EventSource时出错:', error);
+            aiMessageElement.textContent = '初始化API连接失败';
+            aiMessageElement.classList.remove('typewriter-text');
+            addSystemMessage('初始化API连接时发生错误', true);
+
+            // 停止计时器
+            if (state.thinkingTimer) {
+                clearInterval(state.thinkingTimer);
+                state.thinkingTimer = null;
+                updateThinkingTime(thinkingContainer, true);
+            }
+        }
+    }
+
+    // 全局折叠切换函数 - 修复版本
+    window.toggleCollapse = function(containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        // 获取内容区域
+        const contentId = 'content-' + containerId;
+        const content = document.getElementById(contentId);
+        if (!content) return;
+
+        // 切换折叠状态
+        content.classList.toggle('collapsed');
+
+        // 切换折叠图标方向
+        const icon = container.querySelector('.collapse-icon');
+        if (icon) {
+            // 确保正确切换上下箭头
+            if (content.classList.contains('collapsed')) {
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+            } else {
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            }
+        }
+    };
+
+    // 滚动到底部
+    function scrollToBottom() {
+        domElements.chatContainer.scrollTop = domElements.chatContainer.scrollHeight;
+    }
+
+    // 页面加载完成后初始化
+    window.addEventListener('DOMContentLoaded', initializePage);
+</script>
+</body>
+</html>

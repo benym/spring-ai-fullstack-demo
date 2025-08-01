@@ -1,0 +1,14 @@
+{
+  "models": [
+    {
+      "name": "thinkModel",
+      "modelName": "qwen-plus-2025-04-28",
+      "enableThink": true
+    },
+    {
+      "name": "noThinkModel",
+      "modelName": "qwen3-235b-a22b",
+      "enableThink": false
+    }
+  ]
+}

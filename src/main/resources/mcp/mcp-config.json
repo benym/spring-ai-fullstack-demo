@@ -1,0 +1,28 @@
+{
+  "searchAgent": {
+    "mcp-servers": [
+      {
+        "url" : "https://mcp.api-inference.modelscope.net",
+        "sseEndpoint": "/2322845aebb640/sse",
+        "description": "必应联网搜索服务",
+        "enabled": true
+      },
+      {
+        "url" : "https://mcp.api-inference.modelscope.net",
+        "sseEndpoint": "/a4abcaa665604e/sse",
+        "description": "高德地图服务",
+        "enabled": true
+      }
+    ]
+  },
+  "weatherAgent": {
+    "mcp-servers": [
+      {
+        "url" : "https://mcp.api-inference.modelscope.net",
+        "sseEndpoint": "/44cdf894707a44/sse",
+        "description": "天气服务",
+        "enabled": true
+      }
+    ]
+  }
+}

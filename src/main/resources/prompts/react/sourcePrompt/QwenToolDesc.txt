@@ -1,0 +1,5 @@
+{name_for_model}: Call this tool to interact with the {name_for_human} API.
+
+What is the {name_for_human} API useful for? {description_for_model}
+
+Parameters: {parameters} Format the arguments as a JSON object.

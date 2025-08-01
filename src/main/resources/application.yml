@@ -1,0 +1,65 @@
+# server配置
+server:
+  # 优雅停机
+  shutdown: GRACEFUL
+  # 端口及请求基础路径
+  port: 8080
+  tomcat:
+    # 最大连接数
+    max-connections: 15000
+    # 请求队列长度
+    accept-count: 1000
+    uri-encoding: UTF-8
+    accesslog:
+      # 日志开关
+      enabled: true
+      # 日志格式
+      pattern: '%h %t host:"%{host}i" "%r" %s %b Referer:"%{Referer}i" User-Agent:"%{User-Agent}i" clientIp:"%{x-client-ip}i"'
+      # 启用访问日志
+      rotate: true
+      # 放在日志文件名中的日期格式
+      file-date-format: .yyyy-MM-dd
+    # 日志输出目录
+    basedir: /data/logs/access/
+
+# spring配置
+spring:
+  ai:
+    dashscope:
+      api-key: ${DASHSCOPE_API_KEY}
+    mcp:
+      client:
+        enabled: true
+        type: ASYNC
+  application:
+    name: spring-ai-fullstack-demo
+  # jackson配置
+  jackson:
+    time-zone: GMT+8
+    date-format: yyyy-MM-dd HH:mm:ss
+  # mvc配置
+  mvc:
+    format:
+      date: yyyy-MM-dd HH:mm:ss
+  # redis配置
+  data:
+    redis:
+      connect-timeout: 10000
+
+# 日志配置
+logging:
+  config: classpath:log4j2.xml
+  level:
+    root: info
+    org.springframework: info
+    org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor: debug
+
+demo:
+  ai:
+    # 是否启用mcp agent分配
+    mcp:
+      assign:
+        enabled: true
+    # 是否启用mcp tool调用可观测
+    observation:
+      enabled: true
