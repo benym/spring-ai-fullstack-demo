@@ -63,6 +63,10 @@ demo:
     # 是否启用mcp tool调用可观测
     observation:
       enabled: true
+    memory:
+      memory-type: simple
+    vector:
+      vector-type: simple
 rpamis:
   exception:
     enabled: true

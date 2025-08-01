@@ -32,6 +32,7 @@ import org.springframework.ai.rag.preretrieval.query.transformation.TranslationQ
 import org.springframework.ai.rag.retrieval.join.ConcatenationDocumentJoiner;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
 import org.springframework.ai.tool.ToolCallbackProvider;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.elasticsearch.ElasticsearchVectorStore;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
@@ -56,7 +57,7 @@ public class ChatRagController {
 
     private final ChatClient.Builder noThinkModelChatClientBuilder;
 
-    private final ElasticsearchVectorStore elasticsearchVectorStore;
+    private final VectorStore vectorStore;
 
     private final PromptLoader promptLoader;
 
@@ -64,10 +65,10 @@ public class ChatRagController {
 
     public ChatRagController(ChatClient.Builder thinkModelChatClientBuilder,
                              ChatClient.Builder noThinkModelChatClientBuilder,
-                             @Qualifier("elasticsearchVectorStore") ElasticsearchVectorStore elasticsearchVectorStore,
+                             @Qualifier("vectorStore") VectorStore vectorStore,
                              @Qualifier("innerMcpToolCallBackProvider") ToolCallbackProvider toolCallbackProvider,
                              PromptLoader promptLoader,
-                             MessageWindowChatMemory messageWindowChatMemory,
+                             @Qualifier("messageMemory") MessageWindowChatMemory messageWindowChatMemory,
                              McpForAgentSelector mcpForAgentSelector,
                              McpFactory mcpFactory) {
         this.promptLoader = promptLoader;
@@ -99,7 +100,7 @@ public class ChatRagController {
                         new SimpleLoggerAdvisor(),
                         MessageChatMemoryAdvisor.builder(messageWindowChatMemory).build()
                 );
-        this.elasticsearchVectorStore = elasticsearchVectorStore;
+        this.vectorStore = vectorStore;
     }
 
     /**
@@ -147,7 +148,7 @@ public class ChatRagController {
         // 5. Retrieval检索增强
         // 5.1 VectorStoreDocumentRetriever
         VectorStoreDocumentRetriever vectorStoreDocumentRetriever = VectorStoreDocumentRetriever.builder()
-                .vectorStore(elasticsearchVectorStore)
+                .vectorStore(vectorStore)
                 .topK(5)
                 .similarityThreshold(0.5)
                 .build();
@@ -249,7 +250,7 @@ public class ChatRagController {
         // 5. Retrieval检索增强
         // 5.1 VectorStoreDocumentRetriever
         VectorStoreDocumentRetriever vectorStoreDocumentRetriever = VectorStoreDocumentRetriever.builder()
-                .vectorStore(elasticsearchVectorStore)
+                .vectorStore(vectorStore)
                 .topK(5)
                 .similarityThreshold(0.5)
                 .build();
