@@ -8,6 +8,7 @@ import org.springframework.ai.vectorstore.SimpleVectorStore;
 import org.springframework.ai.vectorstore.elasticsearch.ElasticsearchVectorStore;
 import org.springframework.ai.vectorstore.elasticsearch.ElasticsearchVectorStoreOptions;
 import org.springframework.ai.vectorstore.elasticsearch.SimilarityFunction;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -23,23 +24,23 @@ import org.springframework.context.annotation.Configuration;
  * @date 2025/8/1 17:57
  */
 @EnableConfigurationProperties({VectorProperties.class})
-@Configuration
+@Configuration(enforceUniqueMethods = false)
 @Slf4j
 public class VectorAutoConfiguration {
 
-    @Value("${spring.ai.vectorstore.elasticsearch.index-name}")
+    @Value("${spring.ai.vectorstore.elasticsearch.index-name:test_vector_store}")
     private String indexName;
 
-    @Value("${spring.ai.vectorstore.elasticsearch.similarity}")
+    @Value("${spring.ai.vectorstore.elasticsearch.similarity:cosine}")
     private SimilarityFunction similarityFunction;
 
-    @Value("${spring.ai.vectorstore.elasticsearch.dimensions}")
+    @Value("${spring.ai.vectorstore.elasticsearch.dimensions:1536}")
     private int dimensions;
 
     @Bean(name = "vectorStore")
     @ConditionalOnMissingBean
     @ConditionalOnProperty(name = "demo.ai.vector.vector-type", havingValue = "elasticsearch", matchIfMissing = true)
-    public ElasticsearchVectorStore vectorStore(RestClient restClient, EmbeddingModel embeddingModel) {
+    public AbstractObservationVectorStore vectorStore(RestClient restClient, EmbeddingModel embeddingModel) {
         log.info("create elasticsearch vector store");
         ElasticsearchVectorStoreOptions options = new ElasticsearchVectorStoreOptions();
         // Optional: defaults to "spring-ai-document-index"
@@ -61,7 +62,7 @@ public class VectorAutoConfiguration {
     @Bean(name = "vectorStore")
     @ConditionalOnMissingBean
     @ConditionalOnProperty(name = "demo.ai.vector.vector-type", havingValue = "elasticsearch", matchIfMissing = true)
-    public SimpleVectorStore vectorStore(EmbeddingModel embeddingModel) {
+    public AbstractObservationVectorStore vectorStore(EmbeddingModel embeddingModel) {
         log.info("create simle vector store");
         return SimpleVectorStore.builder(embeddingModel)
                 // Optional: defaults to TokenCountBatchingStrategy

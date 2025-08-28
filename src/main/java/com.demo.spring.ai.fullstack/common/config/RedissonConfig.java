@@ -13,6 +13,7 @@ import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -28,25 +29,26 @@ import java.util.List;
 @Configuration
 public class RedissonConfig {
 
-    @Value("${spring.data.redis.cluster.nodes}")
+    @Value("${spring.data.redis.cluster.nodes:localhost:6379}")
     private String redisCluster;
 
-    @Value("${spring.data.redis.password}")
+    @Value("${spring.data.redis.password:redis}")
     private String passWord;
 
-    @Value("${spring.ai.memory.redis.host}")
+    @Value("${spring.ai.memory.redis.host:localhost}")
     private String redisHost;
 
-    @Value("${spring.ai.memory.redis.port}")
+    @Value("${spring.ai.memory.redis.port:6379}")
     private int redisPort;
 
-    @Value("${spring.ai.memory.redis.password}")
+    @Value("${spring.ai.memory.redis.password:redis}")
     private String redisPassword;
 
-    @Value("${spring.ai.memory.redis.timeout}")
+    @Value("${spring.ai.memory.redis.timeout:1000}")
     private int redisTimeout;
 
     @Bean
+    @ConditionalOnProperty(name = "demo.ai.memory.memory-type", havingValue = "redis", matchIfMissing = true)
     public RedissonClient getRedissonClient() {
         Config config = new Config();
         if (StringUtils.hasLength(redisCluster)) {
@@ -73,6 +75,7 @@ public class RedissonConfig {
      * @return RedisTemplate<String, Object>
      */
     @Bean(name = "redisTemplate")
+    @ConditionalOnProperty(name = "demo.ai.memory.memory-type", havingValue = "redis", matchIfMissing = true)
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
         RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
         // 注入数据源
@@ -109,6 +112,7 @@ public class RedissonConfig {
      * @return RedisTemplate<String, Object>
      */
     @Bean(name = "redisTemplateString")
+    @ConditionalOnProperty(name = "demo.ai.memory.memory-type", havingValue = "redis", matchIfMissing = true)
     public RedisTemplate<String, String> redisTemplateString(RedisConnectionFactory redisConnectionFactory) {
         StringRedisTemplate redisTemplate = new StringRedisTemplate(redisConnectionFactory);
         StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
@@ -137,6 +141,7 @@ public class RedissonConfig {
     }
 
     @Bean
+    @ConditionalOnProperty(name = "demo.ai.memory.memory-type", havingValue = "redis", matchIfMissing = true)
     public RedisChatMemoryRepository redisChatMemoryRepository() {
         return RedisChatMemoryRepository.builder()
                 .host(redisHost)
@@ -147,6 +152,7 @@ public class RedissonConfig {
     }
 
     @Bean
+    @ConditionalOnProperty(name = "demo.ai.memory.memory-type", havingValue = "redis", matchIfMissing = true)
     public RedissonChatMemoryRepository redissonChatMemoryRepository() {
         String[] nodes = redisCluster.split(",");
         List<String> clusterNodes = new ArrayList<>();

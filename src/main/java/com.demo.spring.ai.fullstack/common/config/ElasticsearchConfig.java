@@ -10,6 +10,7 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.elasticsearch.client.RestClient;
 import org.springframework.ai.vectorstore.elasticsearch.SimilarityFunction;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -18,17 +19,18 @@ import org.springframework.context.annotation.Configuration;
 @Slf4j
 public class ElasticsearchConfig {
 
-    @Value("${spring.elasticsearch.uris}")
+    @Value("${spring.elasticsearch.uris:localhost:9200}")
     private String url;
 
-    @Value("${spring.elasticsearch.username}")
+    @Value("${spring.elasticsearch.username:elastic}")
     private String username;
 
-    @Value("${spring.elasticsearch.password}")
+    @Value("${spring.elasticsearch.password:elastic}")
     private String password;
 
 
     @Bean
+    @ConditionalOnProperty(name = "demo.ai.vector.vector-type", havingValue = "elasticsearch", matchIfMissing = true)
     public RestClient restClient() {
         // 解析URL
         String[] uriParts = url.split(",");

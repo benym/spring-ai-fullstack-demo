@@ -19,6 +19,7 @@ import com.rpamis.exception.dto.ExceptionFactory;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.elasticsearch.ElasticsearchVectorStore;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.CollectionUtils;
@@ -38,16 +39,16 @@ public class FileController {
 
     private final ReaderFactory readerFactory;
 
-    private final ElasticsearchVectorStore elasticsearchVectorStore;
+    private final AbstractObservationVectorStore vectorStore;
 
     private final DocumentTransformerFactory documentTransformerFactory;
 
-    @Value("${spring.ai.vectorstore.elasticsearch.index-name}")
+    @Value("${spring.ai.vectorstore.elasticsearch.index-name:test_vector_store}")
     private String indexName;
 
-    public FileController(@Qualifier("elasticsearchVectorStore") ElasticsearchVectorStore elasticsearchVectorStore,
+    public FileController(@Qualifier("vectorStore") AbstractObservationVectorStore vectorStore,
                           ReaderFactory readerFactory, DocumentTransformerFactory documentTransformerFactory) {
-        this.elasticsearchVectorStore = elasticsearchVectorStore;
+        this.vectorStore = vectorStore;
         this.readerFactory = readerFactory;
         this.documentTransformerFactory = documentTransformerFactory;
     }
@@ -73,14 +74,14 @@ public class FileController {
         metadataMap.put("fileSize", String.valueOf(file.getSize()));
         DocumentTransformerStrategy metaDataTransformer = documentTransformerFactory.getStrategy(TransformerTypeEnum.META_DATA.getCode());
         List<Document> metaDataDocuments = metaDataTransformer.transformWithMeta(transformDocuments, metadataMap);
-        elasticsearchVectorStore.add(metaDataDocuments);
+        vectorStore.add(metaDataDocuments);
         return Response.success("上传成功");
     }
 
     @GetMapping("/search/document")
     public Response<List<DocumentDataResponse>> searchUserDocument(@RequestParam("userId") @NotBlank(message = "用户Id不能为空") String userId) throws IOException {
         Assert.isTrue(!userId.isBlank(), "用户Id不能为空");
-        Optional<ElasticsearchClient> nativeClient = elasticsearchVectorStore.getNativeClient();
+        Optional<ElasticsearchClient> nativeClient = vectorStore.getNativeClient();
         if (nativeClient.isEmpty()) {
             throw ExceptionFactory.bizNoStackException("Elasticsearch客户端未初始化");
         }
@@ -129,7 +130,7 @@ public class FileController {
     @PostMapping("/delete/document")
     public Response<String> deleteDocument(@RequestParam("docIdList") List<String> docIdList) throws IOException {
         Assert.isTrue(!CollectionUtils.isEmpty(docIdList), "文档Id不能为空");
-        Optional<ElasticsearchClient> nativeClient = elasticsearchVectorStore.getNativeClient();
+        Optional<ElasticsearchClient> nativeClient = vectorStore.getNativeClient();
         if (nativeClient.isEmpty()) {
             throw ExceptionFactory.bizNoStackException("Elasticsearch客户端未初始化");
         }

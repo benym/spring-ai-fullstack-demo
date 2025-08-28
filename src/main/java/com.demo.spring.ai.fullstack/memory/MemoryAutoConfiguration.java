@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @EnableConfigurationProperties({MemoryProperties.class})
-@Configuration
+@Configuration(enforceUniqueMethods = false)
 @Slf4j
 public class MemoryAutoConfiguration {
 
@@ -19,7 +19,7 @@ public class MemoryAutoConfiguration {
     @Bean("messageMemory")
     @ConditionalOnMissingBean
     @ConditionalOnProperty(name = "demo.ai.memory.memory-type", havingValue = "redis", matchIfMissing = true)
-    public MessageWindowChatMemory messageWindowChatMemory(RedissonChatMemoryRepository redissonChatMemoryRepository) {
+    public MessageWindowChatMemory messageRedisWindowChatMemory(RedissonChatMemoryRepository redissonChatMemoryRepository) {
         log.info("Initializing Redis MessageWindowChatMemory with max messages: {}", MAX_MESSAGES);
         return MessageWindowChatMemory.builder()
                 .chatMemoryRepository(redissonChatMemoryRepository)
@@ -30,7 +30,7 @@ public class MemoryAutoConfiguration {
     @Bean("messageMemory")
     @ConditionalOnMissingBean
     @ConditionalOnProperty(name = "demo.ai.memory.memory-type", havingValue = "simple", matchIfMissing = true)
-    public MessageWindowChatMemory messageWindowChatMemory() {
+    public MessageWindowChatMemory messageInMemoryWindowChatMemory() {
         log.info("Initializing InMemory MessageWindowChatMemory with max messages: {}", MAX_MESSAGES);
         InMemoryChatMemoryRepository inMemoryChatMemoryRepository = new InMemoryChatMemoryRepository();
         return MessageWindowChatMemory.builder()

@@ -27,6 +27,13 @@ spring:
   ai:
     dashscope:
       api-key: ${DASHSCOPE_API_KEY}
+      chat:
+        options:
+          model: qwen-plus-2025-04-28
+          enable-thinking: true
+      embedding:
+        options:
+          model: text-embedding-v1
     mcp:
       client:
         enabled: true
@@ -48,7 +55,6 @@ spring:
 
 # 日志配置
 logging:
-  config: classpath:log4j2.xml
   level:
     root: info
     org.springframework: info
