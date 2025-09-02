@@ -1,6 +1,5 @@
 package com.demo.spring.ai.fullstack.common.config;
 
-import com.alibaba.cloud.ai.memory.redis.RedisChatMemoryRepository;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
@@ -8,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.demo.spring.ai.fullstack.memory.RedissonChatMemoryRepository;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
@@ -138,33 +136,5 @@ public class RedissonConfig {
         redisTemplate.setDefaultSerializer(jackson2JsonRedisSerializer);
         redisTemplate.afterPropertiesSet();
         return redisTemplate;
-    }
-
-    @Bean
-    @ConditionalOnProperty(name = "demo.ai.memory.memory-type", havingValue = "redis", matchIfMissing = true)
-    public RedisChatMemoryRepository redisChatMemoryRepository() {
-        return RedisChatMemoryRepository.builder()
-                .host(redisHost)
-                .port(redisPort)
-				.password(redisPassword)
-                .timeout(redisTimeout)
-                .build();
-    }
-
-    @Bean
-    @ConditionalOnProperty(name = "demo.ai.memory.memory-type", havingValue = "redis", matchIfMissing = true)
-    public RedissonChatMemoryRepository redissonChatMemoryRepository() {
-        String[] nodes = redisCluster.split(",");
-        List<String> clusterNodes = new ArrayList<>();
-        for (String node : nodes) {
-            clusterNodes.add("redis://" + node);
-        }
-        return RedissonChatMemoryRepository.builder()
-                .useCluster(new RedissonChatMemoryRepository.RedisClusterConfig(clusterNodes))
-                .host(redisHost)
-                .port(redisPort)
-                .password(redisPassword)
-                .timeout(redisTimeout)
-                .build();
     }
 }

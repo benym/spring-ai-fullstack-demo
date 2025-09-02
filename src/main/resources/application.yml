@@ -29,7 +29,7 @@ spring:
       api-key: ${DASHSCOPE_API_KEY}
       chat:
         options:
-          model: qwen-plus-2025-04-28
+          model: qwen-vl-plus-2025-08-15
           enable-thinking: true
       embedding:
         options:
@@ -38,6 +38,9 @@ spring:
       client:
         enabled: true
         type: ASYNC
+    memory:
+      redis:
+        client-type: jedis
   application:
     name: spring-ai-fullstack-demo
   # jackson配置
@@ -70,7 +73,7 @@ demo:
     observation:
       enabled: true
     memory:
-      memory-type: simple
+      memory-type: redis
     vector:
       vector-type: simple
 rpamis:

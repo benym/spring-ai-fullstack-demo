@@ -115,14 +115,14 @@
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-starter-memory</artifactId>
-            <version>1.0.0.2</version>
+            <artifactId>spring-ai-alibaba-autoconfigure-memory</artifactId>
+            <version>1.0.0.3</version>
         </dependency>
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-starter-memory-redis</artifactId>
-            <version>1.0.0.2</version>
+            <version>1.0.0.3</version>
         </dependency>
 
         <!--        <dependency>-->

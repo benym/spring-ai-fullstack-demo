@@ -1,5 +1,6 @@
 package com.demo.spring.ai.fullstack.memory;
 
+import com.alibaba.cloud.ai.memory.redis.JedisRedisChatMemoryRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
@@ -19,10 +20,10 @@ public class MemoryAutoConfiguration {
     @Bean("messageMemory")
     @ConditionalOnMissingBean
     @ConditionalOnProperty(name = "demo.ai.memory.memory-type", havingValue = "redis", matchIfMissing = true)
-    public MessageWindowChatMemory messageRedisWindowChatMemory(RedissonChatMemoryRepository redissonChatMemoryRepository) {
+    public MessageWindowChatMemory messageRedisWindowChatMemory(JedisRedisChatMemoryRepository jedisRedisChatMemoryRepository) {
         log.info("Initializing Redis MessageWindowChatMemory with max messages: {}", MAX_MESSAGES);
         return MessageWindowChatMemory.builder()
-                .chatMemoryRepository(redissonChatMemoryRepository)
+                .chatMemoryRepository(jedisRedisChatMemoryRepository)
                 .maxMessages(MAX_MESSAGES)
                 .build();
     }
