@@ -1,5 +1,14 @@
 # 如何使用Spring-AI实现完整的ChatAgent产品
 
+本文主要介绍了Spring-AI源码的核心概念和设计思路。以及怎样通过Spring-AI实现一个完整的ChatAgent产品
+
+开源代码地址 https://github.com/benym/spring-ai-fullstack-demo
+
+项目依赖版本
+- Spring AI: 1.0.0
+- Spring AI Alibaba: 1.0.0.2
+- Spring AI Alibaba Memory: 1.0.0.3
+
 第一次加载时需要拉取CDN的前端JS，尽量保持网络可以访问外网，避免显示效果不全
 
 加载完成后形成前端缓存，后续就不用拉了
@@ -1242,7 +1251,7 @@ while (true) {  
 
 ![](share-27.png)
 
-在原生ReAct情况下，比如上文的Qwen ReAct Prompt需要的工具信息，就需要这样去在模板上进行填充，在测试方法上，本地也保留了这种方式`com.lenovo.m2.buy.ai.BaseTest#testLoadPrompt`
+在原生ReAct情况下，比如上文的Qwen ReAct Prompt需要的工具信息，就需要这样去在模板上进行填充，在测试方法上，本地也保留了这种方式`BaseTest#testLoadPrompt`
 
 ### 有框架的情况下，还需要实现ReAct吗(工具调用源码解读)
 
@@ -1613,7 +1622,7 @@ public class ChatStreamProcessor {
 
 这一部分代码主要参考了spring-ai-alibaba-deepsearch项目中代码，由于上文中采用ReAct Prompt会形成Prompt注入的情况，产生强烈的幻觉，日志上也没有显示到底真正调用Tool没有，所以对于Tool调用的可观测显得非常有必要存在，这份代码主要就是实现了ToolCalling在开始和结束时候的日志打印
 
-也在项目中的`com.lenovo.m2.buy.ai.observation`包下
+也在项目中的`observation`包下
 
 ```java
 @Configuration
