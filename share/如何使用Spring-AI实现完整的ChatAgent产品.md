@@ -6,7 +6,7 @@
 
 ![](share-11.png)
 
-整个项目依附的基础设施包括uat环境的Redis(存储记忆)，Es(向量数据库，RAG文档)
+整个项目依附的基础设施包括Redis(存储记忆)，Es(向量数据库，RAG文档)
 
 依赖第三方能力的Chat(阿里云百炼api key)、Tool能力(项目内Tool，项目外Tool魔搭社区)
 
